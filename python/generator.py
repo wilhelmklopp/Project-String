@@ -10,7 +10,6 @@ def generate(iv):
     for i in short:
         if i != "":
             final = final + i
-    print (final)
     return (final)
 def resolve(short):
     iv = 0
