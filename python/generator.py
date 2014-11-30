@@ -19,4 +19,4 @@ def resolve(short):
         short_array.append(i)
     for i in range(len(short_array)-1, -1, -1):
         iv = iv * len(alphabet) + alphabet.index(short_array[i])
-    print (iv)
+    return (iv)
