@@ -1,0 +1,5 @@
+# Exclude compiled python files
+*.pyc
+
+# Django stuff:
+*.log
