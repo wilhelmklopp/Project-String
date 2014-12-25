@@ -3,3 +3,8 @@
 
 # Django stuff:
 *.log
+
+# heroku stuff
+venv
+staticfiles
+.env
