@@ -3,6 +3,7 @@
 
 # Django stuff:
 *.log
+settings.py
 
 # heroku stuff
 venv
