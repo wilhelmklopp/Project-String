@@ -8,4 +8,5 @@ urlpatterns = patterns('',
     #url(r'$', include('pstring.urls')),
     url(r'^$', include('pstring.urls')),
     url(r'^(?P<short>[-bcdfghjkmnpqrstvwxyzBCDFGHJKMNPQRSTVWXY3456789]+)/$', views.resolve_landing, name='resolve_landing'),
+    url(r'^form/$', views.show_form, name='show_form'),                   
 )
