@@ -9,6 +9,9 @@ body {
   padding: 15px;
   margin: 0 auto;
 }
+.form-error {
+  display: none ;
+}
 .form-url .form-url-heading,
 .form-url .checkbox {
   margin-bottom: 10px;

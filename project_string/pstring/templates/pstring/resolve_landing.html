@@ -1,14 +1,181 @@
+{% load staticfiles %}
 <html>
 <head>
-<title>
-{{ iv }}
-</title>
+<head>
+	<title>{{ iv }}</title>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+	<!-- Bootstrap core CSS -->
+	<link href="{% static 'pstring/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
+
+
+	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+	<!--[if lt IE 9]>
+		<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+		 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	<![endif]-->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script src="{% static 'pstring/jquery/jquery.cookie.js' %}"></script>
+</head>
 </head>
 <body>
-<p>{{ result }}</p>
+<p>{{ final }}</p>
+<center>
+<!--ugly code following -->
+<h1>Your shortened link is: <script>
+function getURL(url) { // function to strip http:// or anything like that
+	for (i=0; i < url.length; i++) {
+		if (url[i] == ":") {
+			if (url[i+1] + url[i+2] == "//") {
+				var result = "";
+				for (index=i+3; index < url.length; index++) {
+					result = result + url[index];
+				}
+				return result;
+			}
+		}
+	}
+}
+document.write("<b>" + getURL(document.URL) + "</b>")</script>
+</h1>
+</center>
+<label for="autoRedirect">To always automatically redirect to {{url}}, check this box.</label>
+<input type="checkbox" id="autoRedirect" />
+<br />
+<br />
+<button class="btn btn-lg btn-primary btn-block" onclick="buttonRedirect()" style="max-width:300px">Redirect</button>
 <script>
-var result = {{ iv }};
-alert("This would redirect you to whatever site is saved at " + result + ".");
+function buttonRedirect() {
+	window.location ="{{ url }}";
+}
+</script>
+<script>
+function getURL(url) { // function to strip http:// or anything like that
+	for (i=0; i < url.length; i++) {
+		if (url[i] == ":") {
+			if (url[i+1] + url[i+2] == "//") {
+				var result = "";
+				for (index=i+3; index < url.length; index++) {
+					result = result + url[index];
+				}
+				return result;
+			}
+		}
+	}
+}
+function readCookie(cname) {
+    var name = $.cookie(cname);
+	return name;
+}
+function init_checkbox() {
+	var cookie_value = readCookie("AUTOREDIRECT");
+	var cookie_value_parsed = JSON.parse(cookie_value);
+	if (cookie_value_parsed.length == 0) {
+		$(function() {
+		$("#autoRedirect").prop("checked", false);
+		//console.log("Checkbox was unchecked");
+		});
+	 //checkbox is checked by default
+	}
+	else {
+		//console.log("init_checkbox()" + "parsed.length: " + cookie_value_parsed.length);
+		for (item=0; item < cookie_value_parsed.length; item++) {
+			//console.log(cookie_value_parsed[item]);
+			if (cookie_value_parsed[item] == getURL( "{{ url }}")) {
+				$(function() {
+				$("#autoRedirect").prop("checked", true);
+				});
+				//console.log("Checkbox was checked");
+			}
+	 //checkbox is unchecked by default
+		}
+	}
+}
+$(document).ready(function () {
+	init_checkbox();
+});
+function set_auto_cookies() { //change to check for checkbox checked property; Gets called when checkbox is clicked.
+	var cookie_value = readCookie("AUTOREDIRECT");
+	var cookie_value_parsed = JSON.parse(cookie_value);
+	if ($("#autoRedirect").is(":checked")) {
+		//unsetCookie();
+		// todo: check if url is included
+		if (cookie_value_parsed.length == 0) {
+			setCookie();
+			//console.log("Cookie set alone");
+		}
+		else {
+			for (i=0; i < cookie_value_parsed.length; i++) {
+				if (cookie_value_parsed[i] != getURL( "{{ url }}")) {
+					setCookie();
+					//console.log("Cookie set among others");
+				}
+				//console.log(i);
+			}
+		}
+		console.log(cookie_value_parsed.length);
+	}
+	else {
+		cookie_value = readCookie("AUTOREDIRECT");
+		cookie_value_parsed = JSON.parse(cookie_value);
+		for (u=0; u < cookie_value_parsed.length; u++) { //uses u, instead of i since there was a weird console.log() bug
+			//console.log(cookie_value_parsed[u] + String(u));
+			if (String(cookie_value_parsed[u]) == getURL("{{ url }}")) {
+				unsetCookie(u);
+			}
+		}
+	}
+}
+function init_cookies() {
+	redirect_urls = readCookie("AUTOREDIRECT");
+	//if ($("#autoRedirect").is(":checked")) {
+	if (!redirect_urls) {
+		emptyarray = []
+		$.cookie("AUTOREDIRECT", JSON.stringify(emptyarray), {expires: 180, path: "/"});
+	}
+}
+function setCookie() {
+	redirect_urls = readCookie("AUTOREDIRECT");
+	redirect_urls_parsed = JSON.parse(redirect_urls);
+	//console.log(redirect_urls_parsed);
+	url_to_add = getURL("{{ url }}");
+	//console.log(url_to_add);
+	redirect_urls_parsed.push(String(url_to_add))
+	final_cookie = redirect_urls_parsed;
+	//console.log("final cookie: " + final_cookie);
+	$.cookie("AUTOREDIRECT", JSON.stringify(final_cookie), {expires: 180, path: "/"});
+}
+function unsetCookie(x) { //this needs to be implemented: check whether respective url exists in array
+	redirect_urls = readCookie("AUTOREDIRECT");
+	redirect_urls_parsed = JSON.parse(redirect_urls);
+	//console.log(redirect_urls_parsed);
+	redirect_urls_parsed.splice(x, 1);
+	final_cookie = redirect_urls_parsed;
+	//console.log("final cookie: " + String(final_cookie));
+	$.cookie("AUTOREDIRECT", JSON.stringify(final_cookie), {expires: 180, path: "/"});
+	
+	//document.cookie = "AUTOREDIRECT=; " + "expires=Thu, 01 Jan 1970 00:00:00 UTC;" ;  Temporary disable for larger implementation
+}
+function verify_redirect() {
+	cookie_value = readCookie("AUTOREDIRECT");
+	cookie_value_parsed = JSON.parse(cookie_value);
+	for (a=0; a < cookie_value_parsed.length; a++) { //uses u, because of i since there was a weird console.log() bug
+		//console.log(cookie_value_parsed[a] + String(a));
+		if (String(cookie_value_parsed[a]) == getURL("{{ url }}")) {
+			window.location.replace("{{ url }}");
+		}
+	}
+}
+init_cookies();
+verify_redirect();
+$(document).ready(function () {
+	$('#autoRedirect').click(function() {
+		set_auto_cookies();
+	});
+});
 </script>
 </body>
 </html>

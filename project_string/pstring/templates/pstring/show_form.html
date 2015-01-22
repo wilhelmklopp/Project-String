@@ -26,20 +26,30 @@
 
     <body>
 	<div class ="container">
-		<form class ="form-url" action="/form/" method="post">
+		<form class ="form-url" action="/generate/" method="post">
 			{% csrf_token %}
 			
 			{{ form.non_field_errors }}
 			<div class="long-url-wrapper">
-				{{ form.long_url.errors }}
+				<div id="error" class="form-error bg-warning"></div>
+
 				<label for ="{{ form.long_url.1 }}" class = "sr-only" >URL to shorten: </label>
 				{{ form.long_url }}
 			</div>
+			<br />
 			<div class="g-recaptcha" data-sitekey="6Lcg_P8SAAAAABDyIedgNoi6Y0hREcDVdFsDpSxB"></div>
 			<br />
 			<button class="btn btn-lg btn-primary btn-block" type="submit">Generate</button>
 		</form>
 	</div>
+	<script>
+	function renderErrorDiv() {
+		$("#error").append('{{ form.long_url.errors }}');
+		$("#error").show("slow");
+	}
+	// Can pass in function name
+	$(document).ready(renderErrorDiv);
+	</script>
     </body>
 
 </html>
