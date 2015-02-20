@@ -1,4 +1,4 @@
-{% load staticfiles %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,23 +7,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
+	<!-- favicon -->
+	<link rel="icon" type="image/png" href="{% static 'pstring/favicon.ico' %}"/>
     <title>Shorten a URL with pul.io</title>
 
     <!-- Bootstrap Core CSS -->
     <link href="{% static 'pstring/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
+	
+	<!-- jquery -->
+	<script data-cfasync="false" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	
+	<!--jquery cookie plugin -->
+	<script data-cfasync="false" src="{% static 'pstring/jquery/jquery.cookie.js' %}"></script>
 
-    <!-- Custom CSS -->
+    <!-- Bootstrap Core JS -->
+	<script src="{% static 'pstring/bootstrap/dist/js/bootstrap.min.js' %}" defer></script>
+	
+	<!-- Custom CSS -->
     <link href="{% static 'pstring/landing-page.css' %}" rel="stylesheet">
 
     <!-- Custom Fonts -->
     <link href="{% static 'pstring/font-awesome/css/font-awesome.min.css' %}" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
 	
-	<!-- jquery -->
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-
 	<!--recaptcha-->
-	<script src='https://www.google.com/recaptcha/api.js'></script>
+	<script data-cfasync="false" src='https://www.google.com/recaptcha/api.js' async defer></script>
 	
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -47,13 +55,15 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand topnav" href="#">pul.io</a>
+				<a class="navbar-brand topnav" href="/"><img src ="{% static 'pstring/favicon.png' %}" height="30" width="30"/></a>
+                <a class="navbar-brand topnav" href="/">pul.io</a>
             </div>
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right">
                     <li>
-                        <a href="/generate/">Shorten a URL</a>
+                        <a href="http://wilhelmklopp.com">Contact</a>
+						<!-- About page -->
                     </li>
                 </ul>
             </div>
@@ -70,15 +80,14 @@
 
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="intro-message">
+                    <div class="intro-message" style="padding-top: 5%">
                         <h1>Welcome to pul.io</h1>
-                        <h3>Get started by clicking the button below.</h3>
+                        <h3>Get started by shortening a URL</h3>
                         <hr class="intro-divider">
                         <div class ="panel panel-default generate">
-							<div class="panel-body">Shorten a URL<span class="caret"></span></div>
-							<div class="panel-footer"> <!--potential display:none here-->
+							<div class="panel-body">
 								<div>
-									<form class ="form-url" action="/" method="post">
+									<form id="shorten-url" class ="form-url" action="/" method="post">
 										{% csrf_token %}
 										
 										{{ form.non_field_errors }}
@@ -91,8 +100,79 @@
 										<br />
 										<div class="g-recaptcha" data-sitekey="6Lcg_P8SAAAAABDyIedgNoi6Y0hREcDVdFsDpSxB"></div>
 										<br />
-										<button class="btn btn-lg btn-primary btn-block" type="submit">Generate</button>
+										<button id="shorten-submit" data-loading-text="Loading..." class="btn btn-lg btn-primary btn-block" type="submit">Shorten</button>
 									</form>
+									<script data-cfasync="false">
+										function ajax_post() {
+											$("#shorten-submit").button("loading"); //change button to loading state
+											//console.log("URL: " + $("#id_long_url").val());
+											//console.log("Recaptcha: " + $("#g-recaptcha-response").val());
+											//get csrftoken
+											var csrftoken = $.cookie("csrftoken");
+											//set headers and prepare ajax post (csrf security)
+											function csrfSafeMethod(method) {
+												// these HTTP methods do not require CSRF protection
+												return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+											}
+											$.ajaxSetup({
+												beforeSend: function(xhr, settings) {
+													if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+														xhr.setRequestHeader("X-CSRFToken", csrftoken);
+													}
+												}
+											});
+											//end csrf security init
+											//console.log("ajax setup complete");
+											//actual post here
+											$.ajax({
+												url: "/generate/",
+												data: {
+													"long_url": $("#id_long_url").val(),
+													"g-recaptcha-response": $("#g-recaptcha-response").val(),
+												},
+												type: "POST",
+												dataType: "json",
+												success: function(json) {
+													//console.log("Success: " + json);
+													//console.dir(json);
+													if (json["success"] == true) {
+														window.location.href = "/" + json["short"];
+													}
+													else {
+														if (json["error-code"] == 2) {
+														$("#error").html("Error: Please enter a URL to shorten");
+													}
+													if (json["error-code"] == 1) {
+														$("#error").html("Error: No POST data provided");
+													}
+													if (json["error-code"] == 3) {
+														$("#error").html("Error: Our servers cannot reach the entered website. Please make sure the website exists.");
+													}
+													if (json["error-code"] == 4) {
+														$("#error").html("Error: The ReCaptcha could not be authenticated successfully.");
+													}
+													}
+												},
+												error: function(xhr, status, errorThrown) {
+													//console.dir(xhr);
+													//console.log("Status: " + status);
+													//console.log("Error: " + errorThrown);
+													$("#error").html("Error: Please check your internet connection. Code: " + errorThrown);
+												},
+												complete: function(xhr, status) {
+													//console.log("completed ajax. status: " + status);
+													//console.dir(xhr);
+													$("#shorten-submit").button("reset");
+												}
+											});
+											//console.log("AJAX request complete.");
+										};
+										$('#shorten-url').on('submit', function(e){
+											e.preventDefault();
+											//console.log("default POST halted");
+											ajax_post();
+										});
+									</script>
 								</div>
 							</div>
 						</div>
@@ -116,11 +196,11 @@
                 <div class="col-lg-5 col-sm-6">
                     <hr class="section-heading-spacer">
                     <div class="clearfix"></div>
-                    <h2 class="section-heading">Death to the Stock Photo:<br>Special Thanks</h2>
-                    <p class="lead">A special thanks to <a target="_blank" href="http://join.deathtothestockphoto.com/">Death to the Stock Photo</a> for providing the photographs that you see in this template. Visit their website to become a member.</p>
+                    <h2 class="section-heading">Help give the internet the security it deserves.</h2>
+                    <p class="lead">For that little extra piece of mind, so you can focus on the things that really matter.</p>
                 </div>
                 <div class="col-lg-5 col-lg-offset-2 col-sm-6">
-                    <img class="img-responsive" src="{% static 'pstring/img/ipad.png' %}" alt="">
+                    <img class="img-responsive" src="{% static 'pstring/img/lock.png' %}" alt="">
                 </div>
             </div>
 
@@ -138,11 +218,11 @@
                 <div class="col-lg-5 col-lg-offset-1 col-sm-push-6  col-sm-6">
                     <hr class="section-heading-spacer">
                     <div class="clearfix"></div>
-                    <h2 class="section-heading">3D Device Mockups<br>by PSDCovers</h2>
-                    <p class="lead">Turn your 2D designs into high quality, 3D product shots in seconds using free Photoshop actions by <a target="_blank" href="http://www.psdcovers.com/">PSDCovers</a>! Visit their website to download some of their awesome, free photoshop actions!</p>
+                    <h2 class="section-heading">Is it really necessary, though?</h2>
+                    <p class="lead">According to Google, 3% of bit.ly links lead to malware.<br>Willing to take the risk?</p>
                 </div>
                 <div class="col-lg-5 col-sm-pull-6  col-sm-6">
-                    <img class="img-responsive" src="{% static 'pstring/img/dog.png' %}" alt="">
+                    <img class="img-responsive" src="{% static 'pstring/img/pie.png' %}" alt="">
                 </div>
             </div>
 
@@ -160,11 +240,11 @@
                 <div class="col-lg-5 col-sm-6">
                     <hr class="section-heading-spacer">
                     <div class="clearfix"></div>
-                    <h2 class="section-heading">Google Web Fonts and<br>Font Awesome Icons</h2>
-                    <p class="lead">This template features the 'Lato' font, part of the <a target="_blank" href="http://www.google.com/fonts">Google Web Font library</a>, as well as <a target="_blank" href="http://fontawesome.io">icons from Font Awesome</a>.</p>
+                    <h2 class="section-heading">Google Analytics Integration</h2>
+                    <p class="lead">Analyse your impact with the tools you already master. We don't provide you with a rudimentary analytics tool that doesn't work half the time. Just use your existing Google Analytics account. Easy, Simple, Seamless. (available soon)</p>
                 </div>
                 <div class="col-lg-5 col-lg-offset-2 col-sm-6">
-                    <img class="img-responsive" src="{% static 'pstring/img/phones.png' %}" alt="">
+                    <img class="img-responsive" src="{% static 'pstring/img/analytics.png' %}" alt="" style="border-radius: 50%">
                 </div>
             </div>
 
@@ -179,24 +259,7 @@
 
         <div class="container">
 
-            <div class="row">
-                <div class="col-lg-6">
-                    <h2>Connect to Start Bootstrap:</h2>
-                </div>
-                <div class="col-lg-6">
-                    <ul class="list-inline banner-social-buttons">
-                        <li>
-                            <a href="https://twitter.com/SBootstrap" class="btn btn-default btn-lg"><i class="fa fa-twitter fa-fw"></i> <span class="network-name">Twitter</span></a>
-                        </li>
-                        <li>
-                            <a href="https://github.com/IronSummitMedia/startbootstrap" class="btn btn-default btn-lg"><i class="fa fa-github fa-fw"></i> <span class="network-name">Github</span></a>
-                        </li>
-                        <li>
-                            <a href="#" class="btn btn-default btn-lg"><i class="fa fa-linkedin fa-fw"></i> <span class="network-name">Linkedin</span></a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            
 
         </div>
         <!-- /.container -->
@@ -211,40 +274,23 @@
                 <div class="col-lg-12">
                     <ul class="list-inline">
                         <li>
-                            <a href="#">Home</a>
+                            <a href="/">Home</a>
                         </li>
                         <li class="footer-menu-divider">&sdot;</li>
                         <li>
-                            <a href="/generate/">Generate a URL</a>
-
+                            <a href="http://wilhelmklopp.com">Contact</a>
+						</li>
+						<li class="footer-menu-divider">&sdot;</li>
+						<li>
+							<a href="https://github.com/xoneco/Project-String/blob/master/LICENCE">Licence</a>
+						</li>
                     </ul>
-                    <p class="copyright text-muted small">Copyright &copy; Your Company 2014. All Rights Reserved</p>
+                    <p class="copyright text-muted small">Copyright Wilhelm Klopp, Code is on Github</p>
                 </div>
             </div>
         </div>
     </footer>
 
-	<script type="text/javascript">
-	//handles form collapsing and expaning
-	$(document).ready(function() {
-	//handles form collapsing and expaning
-	  $(".panel-footer").hide();
-	  //toggle the componenet with class msg_body
-	  $(".panel-body").click(function()
-	  {
-		$(this).next(".panel-footer").slideToggle(500);
-		$(this).children().toggleClass("caret-up");
-	  });
-	 //handles panel hover effect
-	 $(".panel-body")
-		.mouseenter( function() {
-		$(this).toggleClass("panel-hover");
-	 })
-		.mouseleave( function() {
-		$(this).toggleClass("panel-hover");
-	})
-	});
-	</script>
 	<script>
 		//handle error in generate form
 		function renderErrorDiv() {
