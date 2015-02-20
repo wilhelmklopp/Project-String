@@ -2,7 +2,7 @@
 *.pyc
 
 # Django stuff:
-# setting.py is excluded, because of the secrets it contains
+# settings.py is excluded, because of the secrets it contains
 *.log
 settings.py
 
