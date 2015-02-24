@@ -136,7 +136,7 @@
 													//console.log("Success: " + json);
 													//console.dir(json);
 													if (json["success"] == true) {
-														window.location.href = "/" + json["short"];
+														window.location.href = "/" + json["short"] + "/?redirect=false";
 													}
 													else {
 														if (json["error-code"] == 2) {
